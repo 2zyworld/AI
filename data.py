@@ -14,7 +14,7 @@ class TextDataset(Dataset):
         self.dataset = self.dataset.drop(['text1', 'text2', 'text3', 'text4'], axis=1)
         self.dataset.iloc[:, 1:9] = self.dataset.iloc[:, 1:9].multiply(0.01)
         self.tokenizer = AutoTokenizer.from_pretrained(
-            "monologg/koelectra-base-v3-discriminator"
+            "monologg/koelectra-small-v3-discriminator"
         )
         print(self.dataset.describe())
 
@@ -25,6 +25,37 @@ class TextDataset(Dataset):
         row = self.dataset.iloc[idx]
         text = row.text
         label = torch.from_numpy(np.asarray(list(row[1:9])))
+
+        inputs = self.tokenizer(
+            text,
+            return_tensors="pt",
+            truncation=True,
+            max_length=256,
+            padding="max_length",
+            add_special_tokens=True,
+        )
+
+        input_ids = inputs["input_ids"][0]
+        attention_mask = inputs["attention_mask"][0]
+
+        return input_ids, attention_mask, label
+
+
+class TextDatasetEncoded(Dataset):
+    def __init__(self, csv_file):
+        self.dataset = pd.read_csv(csv_file, encoding='utf-8')
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            "monologg/koelectra-small-v3-discriminator"
+        )
+        print(self.dataset.describe())
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        row = self.dataset.iloc[idx]
+        text = row.text
+        label = torch.from_numpy(np.asarray(list(row[:1])))
 
         inputs = self.tokenizer(
             text,
