@@ -11,6 +11,7 @@ from AI.models import KoElectra
 parser = argparse.ArgumentParser(description="Hyperparameters")
 parser.add_argument("--epochs", "-e", type=int, default=100, help="epochs")
 parser.add_argument("--batch_size", "-b", type=int, default=16, help="batch size")
+parser.add_argument("--optimizer", "-o", type=str, choices=["CrossEntropy"], default="CrossEntropy", help="optimizer")
 parser.add_argument(
     "--learning_rate", "-l", type=float, default=5e-6, help="learning rate"
 )
@@ -26,10 +27,10 @@ else:
 
 
 # Dataset #
-train_dataset = TextDataset("training.csv")
-valid_dataset = TextDataset("validation.csv")
-train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=True)
+train = TextDataset("training_1.csv")
+valid = TextDataset("validation_1.csv")
+train_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True)
+valid_loader = DataLoader(valid, batch_size=args.batch_size, shuffle=True)
 
 # Model define #
 model = KoElectra().to(device)
@@ -37,7 +38,7 @@ model = KoElectra().to(device)
 
 # Train #
 optimizer = AdamW(model.parameters(), lr=args.learning_rate)
-criterion = torch.nn.MultiLabelSoftMarginLoss()
+criterion = torch.nn.BCEWithLogitsLoss()
 
 losses = []
 for i in range(args.epochs):
@@ -47,10 +48,10 @@ for i in range(args.epochs):
     for input_ids_batch, attention_masks_batch, y_batch in train_loader:
         optimizer.zero_grad(set_to_none=True)
         y_batch = y_batch.to(device)
-        y_pred = model(input_ids_batch.to(device), attention_mask=attention_masks_batch.to(device))[0]
-        y_pred = y_pred.clone().detach().float()
+        y_hat = model(input_ids_batch.to(device), attention_mask=attention_masks_batch.to(device))[0]
+        y_hat = y_hat.clone().detach().float()
 
-        loss = criterion(y_pred, y_batch)
+        loss = criterion(y_hat, y_batch)
         loss.requires_grad_(True)
         loss.backward()
         optimizer.step()
