@@ -1,18 +1,13 @@
 import pandas as pd
 import numpy as np
+import torch
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
 
 class TextDataset(Dataset):
     def __init__(self, csv_file):
-        self.dataset = pd.read_csv(csv_file, encoding="cp949")
-        self.dataset["text"] = self.dataset.apply(
-            lambda row: " ".join([x for x in row[2:6] if not pd.isna(x)]), axis=1
-        )
-        self.dataset = self.dataset.drop(columns="Unnamed: 0")
-        self.dataset = self.dataset.drop(['text1', 'text2', 'text3', 'text4'], axis=1)
-        self.dataset.iloc[:, 1:9] = self.dataset.iloc[:, 1:9].multiply(0.01)
+        self.dataset = pd.read_csv(csv_file, encoding="utf-8")
         self.tokenizer = AutoTokenizer.from_pretrained(
             "monologg/koelectra-small-v3-discriminator"
         )
@@ -24,7 +19,7 @@ class TextDataset(Dataset):
     def __getitem__(self, idx):
         row = self.dataset.iloc[idx]
         text = row.text
-        label = torch.from_numpy(np.asarray(list(row[1:9])))
+        label = torch.from_numpy(np.asarray(list(row[3:11])))
 
         inputs = self.tokenizer(
             text,
