@@ -1,10 +1,14 @@
 import torch
-from torch.utils.data import DataLoader
-from torch.optim import AdamW
 import argparse
 
-from AI.data import TextDataset
-from AI.models import KoElectra
+# kobert part #
+from torch.utils.data import Dataset, DataLoader
+import gluonnlp as nlp
+import numpy as np
+from transformers import AdamW
+
+from AI.koelectra.data import TextDataset
+from AI.koelectra.models import KoElectra
 
 
 # Arguments #
@@ -29,6 +33,8 @@ else:
 # Dataset #
 train = TextDataset("training_1.csv")
 valid = TextDataset("validation_1.csv")
+
+
 train_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True)
 valid_loader = DataLoader(valid, batch_size=args.batch_size, shuffle=True)
 
@@ -63,3 +69,18 @@ for i in range(args.epochs):
 
     losses.append(total_loss)
     print("Train loss:", total_loss)
+
+
+class BERTDataset(Dataset):
+    def __init__(self, dataset, sent_idx, label_idx, bert_tokenizer, max_len, pad, pair):
+        transform = nlp.data.BERTSentenceTransform(
+            bert_tokenizer, max_seq_length=max_len, pad=pad, pair=pair
+        )
+        self.sentences = [transform([i[sent_idx]]) for i in dataset]
+        self.labels = [np.int32(i[label_idx]) for i in dataset]
+
+    def __getitem__(self, idx):
+        return (self.sentences[idx] + (self.labels[idx],))
+
+    def __len__(self):
+        return (len(self.labels))

@@ -65,3 +65,5 @@ class TextDatasetEncoded(Dataset):
         attention_mask = inputs["attention_mask"][0]
 
         return input_ids, attention_mask, label
+
+
