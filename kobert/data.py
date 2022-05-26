@@ -9,7 +9,7 @@ class BERTDataset(Dataset):
             bert_tokenizer, max_seq_length=max_len, pad=pad, pair=pair
         )
         self.sentences = [transform([data[sent_idx]]) for data in dataset]
-        self.labels = [np.int32(data[label_idx]) for data in dataset]
+        self.labels = [np.int32(data[label_idx]) - 10 for data in dataset]
 
     def __getitem__(self, item):
         return self.sentences[item] + (self.labels[item],)
