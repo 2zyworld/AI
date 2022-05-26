@@ -1,28 +1,29 @@
 import torch
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss
+from torch.optim import AdamW
 
 import gluonnlp as nlp
 import argparse
 
 from kobert.utils import get_tokenizer
 from kobert.pytorch_kobert import get_pytorch_kobert_model
-from transformers import AdamW
 from transformers.optimization import get_cosine_schedule_with_warmup
 
-from AI.kobert.data import BERTDataset
-from AI.kobert.models import BERTClassifier
+from .data import BERTDataset
+from .models import BERTClassifier
 
 
 # Arguments #
 parser = argparse.ArgumentParser(description="Parameters")
-parser.add_argument("--max_len", "-ml", type=int, default=64, help="max length of text data")
+parser.add_argument("--max_len", "-ml", type=int, default=256, help="max length of text data")
 parser.add_argument("--batch_size", "-b", type=int, default=64, help="batch size")
 parser.add_argument("--warmup_ratio", "-wr", type=float, default=0.1, help="warmup ratio")
 parser.add_argument("--epochs", "-e", type=int, default=5, help="number of epochs")
-parser.add_argument("--max_grad_norm", "-mgn", type=int, help="gradient norm clipping")
-parser.add_argument("--log_interval", "-li", type=int, help="interval for training log output")
+parser.add_argument("--max_grad_norm", "-mgn", type=int, default=1, help="gradient norm clipping")
+parser.add_argument("--log_interval", "-li", type=int, default=200, help="interval for training log output")
 parser.add_argument("--learning_rate", "-l", type=float, default=5e-5, help="learning rate")
+parser.add_argument("--cuda", "-c", type=str, default="gpu", choices=["gpu", "cpu"], help="use which device to train")
 args = parser.parse_args()
 
 
@@ -34,11 +35,11 @@ num_epochs = args.epochs
 max_grad_norm = args.max_grad_norm
 log_interval = args.log_interval
 learning_rate = args.learning_rate
-
+cuda = args.cuda
 
 # CUDA #
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-if torch.cuda.is_available():
+device = torch.device("cuda:0" if torch.cuda.is_available() and cuda == "gpu" else "cpu")
+if torch.cuda.is_available() and cuda == "gpu":
     print("Using GPU")
 else:
     print("Using CPU")
@@ -53,8 +54,8 @@ model = BERTClassifier(bert_model, dr_rate=0.5).to(device)
 tokenizer = get_tokenizer()
 token = nlp.data.BERTSPTokenizer(tokenizer, vocab, lower=False)
 
-dataset_train = nlp.data.TSVDataset('train_path', field_indices=[1, 2], num_discard_samples=1)
-dataset_valid = nlp.data.TSVDataset('valid_path', field_indices=[1, 2], num_discard_samples=1)
+dataset_train = nlp.data.TSVDataset('~/dataset/training.tsv', field_indices=[0, 1], num_discard_samples=1)
+dataset_valid = nlp.data.TSVDataset('~/dataset/validation.tsv', field_indices=[0, 1], num_discard_samples=1)
 
 data_train = BERTDataset(dataset_train, 0, 1, token, max_len, True, False)
 data_valid = BERTDataset(dataset_valid, 0, 1, token, max_len, True, False)
@@ -103,8 +104,9 @@ for epoch in range(num_epochs):
         scheduler.step()
         accuracy_train += calculate_accuracy(out, label)
         if batch_id % log_interval == 0:
-            print(f"{epoch}/{num_epochs} loss {loss.data.cpu().numpy()} accuracy {accuracy_train / (batch_id + 1)}")
-    print(f"{epoch}/{num_epochs} | loss {loss.data.cpu().numpy()} | train accuracy {accuracy_train / (batch_id + 1)}")
+            print(f"{epoch}/{num_epochs} batch ID {batch_id}", sep=" ")
+            print(f" loss {loss.data.cpu().numpy():>1.3f} | accuracy {accuracy_train / (batch_id + 1):>3.3f}", sep="\n")
+    print(f"{epoch}/{num_epochs} | train accuracy {accuracy_train / (batch_id + 1)}")
 
     model.eval()
     for batch_id, (token_ids, valid_length, segment_ids, label) in enumerate(dataloader_valid):
