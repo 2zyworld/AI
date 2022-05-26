@@ -3,7 +3,7 @@ from torch import nn
 
 
 class BERTClassifier(nn.Module):
-    def __init__(self, bert, hidden_size=768, num_classes=58, dr_rate=0.5):
+    def __init__(self, bert, hidden_size=768, num_classes=60, dr_rate=0.5):
         super(BERTClassifier, self).__init__()
         self.bert = bert
         self.dr_rate = dr_rate
