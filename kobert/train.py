@@ -5,6 +5,7 @@ from torch.optim import AdamW
 
 import gluonnlp as nlp
 import argparse
+import pandas as pd
 
 from kobert.utils import get_tokenizer
 from kobert.pytorch_kobert import get_pytorch_kobert_model
@@ -136,3 +137,14 @@ for epoch in range(num_epochs):
 
 # Model Save #
 torch.save(model.state_dict(), "model.pt")
+
+
+# Log Save #
+d = {
+    'training_loss': losses_train,
+    'training_accuracy': accuracies_train,
+    'validation_loss': losses_valid,
+    'validation_accuracy': accuracies_valid
+}
+DF = pd.DataFrame(data=d)
+DF.to_csv('training_log.csv', sep=",", encoding="utf-8")
