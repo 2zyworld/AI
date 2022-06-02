@@ -23,7 +23,7 @@ parser.add_argument("--warmup_ratio", "-wr", type=float, default=0.1, help="warm
 parser.add_argument("--epochs", "-e", type=int, default=5, help="number of epochs")
 parser.add_argument("--max_grad_norm", "-mgn", type=int, default=1, help="gradient norm clipping")
 parser.add_argument("--log_interval", "-li", type=int, default=200, help="interval for training log output")
-parser.add_argument("--learning_rate", "-l", type=float, default=5e-5, help="learning rate")
+parser.add_argument("--learning_rate", "-lr", type=float, default=5e-5, help="learning rate")
 parser.add_argument("--cuda", "-c", type=str, default="gpu", choices=["gpu", "cpu"], help="use which device to train")
 parser.add_argument("--model", "-m", type=str, default=None, help="path to the pretrained model")
 args = parser.parse_args()
@@ -54,6 +54,12 @@ bert_model, vocab = get_pytorch_kobert_model()
 model = BERTClassifier(bert_model, dr_rate=0.5).to(device)
 if model_path:
     model.load_state_dict(torch.load(model_path))
+
+trainable = False
+for name, param in model.named_parameters():
+    if "7" in name:
+        trainable = True
+    param.requires_grad = trainable
 
 
 # Data #
@@ -116,9 +122,16 @@ for epoch in range(num_epochs):
         accuracy_train += calculate_accuracy(out, label)
 
         if batch_id % log_interval == 0:
-            print(f"{epoch + 1:>{len(str(num_epochs))}}/{num_epochs} batch ID {batch_id + 1}", end=" ")
-            print(f"loss {loss.data.cpu().numpy():>1.3f} accuracy {accuracy_train / (batch_id + 1):>3.3f}", end="\n")
-    print(f"\nEpoch {epoch + 1} train accuracy {accuracy_train / (batch_id + 1)}")
+            print(f"{epoch + 1:>{len(str(num_epochs))}}/{num_epochs} batch ID {batch_id + 1:>4}", end=" ")
+            print((
+                f"loss {loss.data.cpu().numpy():>1.3f} "
+                f"accuracy {accuracy_train / (batch_id + 1):>1.3f}"
+            ), end="\n")
+    print((
+        f"\nEpoch {epoch + 1} "
+        f"train loss {loss.data.cpu().numpy():>1.3f} "
+        f"train accuracy {accuracy_train / (batch_id + 1):>1.3f}"
+    ))
     losses_train.append(loss.data.cpu().numpy())
     accuracies_train.append(accuracy_train)
 
@@ -131,7 +144,11 @@ for epoch in range(num_epochs):
         loss_val = criterion(out, label)
         accuracy_valid += calculate_accuracy(out, label)
 
-    print(f"Epoch {epoch + 1} loss {loss_val.data.cpu().numpy()} | valid accuracy {accuracy_valid / (batch_id + 1)}\n")
+    print((
+        f"Epoch {epoch + 1} "
+        f"valid loss {loss_val.data.cpu().numpy():>1.3f} "
+        f"valid accuracy {accuracy_valid / (batch_id + 1):>1.3f}\n"
+    ))
     losses_valid.append(loss_val.data.cpu().numpy())
     accuracies_valid.append(accuracy_valid)
 
