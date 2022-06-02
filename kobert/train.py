@@ -19,6 +19,13 @@ from .models import BERTClassifier
 parser = argparse.ArgumentParser(description="Parameters")
 parser.add_argument("--max_len", "-ml", type=int, default=256, help="max length of text data")
 parser.add_argument("--batch_size", "-b", type=int, default=64, help="batch size")
+parser.add_argument(
+    "--freeze_layer", "-fl",
+    type=int,
+    default=0,
+    choices=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    help="for hyperparameter tuning choose from what layer to freeze, set 0 to ignore and go full training"
+)
 parser.add_argument("--warmup_ratio", "-wr", type=float, default=0.1, help="warmup ratio")
 parser.add_argument("--epochs", "-e", type=int, default=5, help="number of epochs")
 parser.add_argument("--max_grad_norm", "-mgn", type=int, default=1, help="gradient norm clipping")
@@ -32,6 +39,7 @@ args = parser.parse_args()
 # Parameters #
 max_len = args.max_len
 batch_size = args.batch_size
+freeze_layer = str(args.freeze_layer)
 warmup_ratio = args.warmup_ratio
 num_epochs = args.epochs
 max_grad_norm = args.max_grad_norm
@@ -57,9 +65,12 @@ if model_path:
 
 trainable = False
 for name, param in model.named_parameters():
-    if "7" in name:
-        trainable = True
-    param.requires_grad = trainable
+    if freeze_layer == "0":
+        pass
+    else:
+        if freeze_layer in name:
+            trainable = True
+        param.requires_grad = trainable
 
 
 # Data #
