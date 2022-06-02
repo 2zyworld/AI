@@ -19,11 +19,11 @@ class BERTDataset(Dataset):
 
 
 class BERTDatasetInference(Dataset):
-    def __init__(self, dataset, bert_tokenizer, max_len, pad, pair):
+    def __init__(self, sentence, bert_tokenizer, max_len, pad, pair):
         transform = nlp.data.BERTSentenceTransform(
             bert_tokenizer, max_seq_length=max_len, pad=pad, pair=pair
         )
-        self.sentences = [transform([data]) for data in dataset]
+        self.sentences = [transform(sentence)]
 
     def __getitem__(self, item):
         return self.sentences[item]
