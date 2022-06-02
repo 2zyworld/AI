@@ -16,3 +16,17 @@ class BERTDataset(Dataset):
 
     def __len__(self):
         return len(self.labels)
+
+
+class BERTDatasetInference(Dataset):
+    def __init__(self, dataset, bert_tokenizer, max_len, pad, pair):
+        transform = nlp.data.BERTSentenceTransform(
+            bert_tokenizer, max_seq_length=max_len, pad=pad, pair=pair
+        )
+        self.sentences = [transform([data]) for data in dataset]
+
+    def __getitem__(self, item):
+        return self.sentences[item]
+
+    def __len__(self):
+        return len(self.sentences)
