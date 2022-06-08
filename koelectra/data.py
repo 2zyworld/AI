@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
 
-class TextDataset(Dataset):
+class ELECTRADataset(Dataset):
     def __init__(self, csv_file):
         self.dataset = pd.read_csv(csv_file, encoding="utf-8")
         self.tokenizer = AutoTokenizer.from_pretrained(
