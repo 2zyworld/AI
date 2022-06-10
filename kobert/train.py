@@ -16,7 +16,7 @@ from .models import BERTClassifier
 
 
 # Arguments #
-parser = argparse.ArgumentParser(description="Parameters")
+parser = argparse.ArgumentParser(description="Hyperparameters")
 parser.add_argument("--max_len", "-ml", type=int, default=256, help="max length of text data")
 parser.add_argument("--batch_size", "-b", type=int, default=64, help="batch size")
 parser.add_argument(
