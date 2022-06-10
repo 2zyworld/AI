@@ -53,16 +53,11 @@ def emotion(output, encoder):
         row = encoder[encoder.code == code].iloc[0, 2:10]
         temp2 = [output[idx] * x for x in row]
         temp1.append(temp2)
-    normalize = np.sum(np.array(temp1), axis=0)
-    return normalize
+    summation = np.sum(np.array(temp1), axis=0)
+    return summation
 
 
-def colorize(output, color_encoder):
-    code = np.argmax(output) + 10
-    if code == 51:
-        code = 31
-    elif code == 59:
-        code = 34
+def colorize(output, encoder):
     color_codes = [
         [255, 0, 0],
         [255, 100, 0],
@@ -73,11 +68,22 @@ def colorize(output, color_encoder):
         [0, 100, 225],
         [156, 0, 225]
     ]
-    temp = [0, 0, 0]
-    row = color_encoder[color_encoder.code == code].iloc[0, 2:10]
-    for idx, value in enumerate(row):
-        modified = opacity(color_codes[idx], value)
-        for i in range(3):
-            temp[i] += modified[i]
-    colorized = [x / np.max(temp) for x in temp]
-    return colorized
+
+    temp1 = []
+
+    for idx in range(60):
+        if idx + 10 == 51:
+            code = 31
+        elif idx + 10 == 59:
+            code = 34
+        else:
+            code = idx + 10
+
+        row = encoder[encoder.code == code].iloc[0, 2:10]
+        for i, value in enumerate(row):
+            modified = opacity(color_codes[i], value * output[idx])
+            temp1.append(modified)
+
+    temp2 = np.sum(np.array(temp1), axis=0)
+    temp2 = [int(x) for x in temp2]
+    return temp2
